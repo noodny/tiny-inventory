@@ -1,0 +1,60 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: tiny-inventory-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tiny_inventory
+      MYSQL_USER: app
+      MYSQL_PASSWORD: password
+    ports:
+      - '4202:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    container_name: tiny-inventory-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mysql://app:password@mysql:3306/tiny_inventory
+      PORT: '4201'
+      CORS_ORIGIN: 'http://localhost:4200'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npx prisma db seed && npm run dev"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: dev
+    container_name: tiny-inventory-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_TARGET: http://backend:4201
+    ports:
+      - '4200:4200'
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/node_modules
+
+volumes:
+  mysql_data:
