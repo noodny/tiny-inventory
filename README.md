@@ -1,131 +1,60 @@
 # Tiny Inventory
 
-Full-stack inventory management app — TypeScript monorepo.
+Full-stack inventory management app - TypeScript monorepo (Fastify, React, MySQL).
 
-## Stack
+Manage **stores**, **products**, and per-store **inventory** (stock quantities). Supports bulk CSV import for inventory updates.
 
-| Layer    | Technology                               |
-| -------- | ---------------------------------------- |
-| Backend  | Fastify 5, TypeScript, Prisma 6, MySQL 8 |
-| Frontend | React 19, Redux Toolkit 2, Zod 3, Vite 6 |
-| Tests    | Vitest 3 (unit), Playwright 1 (e2e)      |
-| Linting  | ESLint 9 (flat config), Prettier 3       |
-| DB       | Prisma migrations + seeding              |
-| Infra    | Docker Compose                           |
-
-## Project structure
-
-```
-tiny-inventory/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma       # Prisma schema (MySQL)
-│   │   └── seed.ts             # Database seed data
-│   ├── src/
-│   │   ├── app.ts              # Fastify app factory
-│   │   ├── index.ts            # Entry point
-│   │   ├── plugins/prisma.ts   # Prisma plugin
-│   │   ├── routes/             # API route modules
-│   │   └── tests/              # Vitest unit tests
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── api/                # API clients
-│   │   ├── components/         # React components
-│   │   ├── store/              # Redux Toolkit slices + hooks
-│   │   └── tests/              # Vitest unit tests
-│   ├── tests/                  # Playwright e2e tests
-│   └── Dockerfile
-├── docker-compose.yml
-└── eslint.config.js            # Root ESLint flat config
-```
-
-## Getting started
-
-### Prerequisites
-
-- Node.js 22+
-- Docker & Docker Compose (for MySQL)
-
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Configure local environment
+## Run
 
 ```bash
 cp backend/.env.example backend/.env
-# Edit backend/.env to set DATABASE_URL if needed
+npm run db:generate         # for Prisma generated types to work locally
+docker compose up           # app → http://localhost:4200
 ```
 
-### 3. Start MySQL
+### Debugging
 
-```bash
-docker compose up mysql -d
-```
+A VSCode `launch.json` debug configuration, attaching to the backend container, is included.
 
-### 4. Run database migrations & seed
+## API Sketch
 
-```bash
-npm run db:migrate    # create/apply migrations
-npm run db:seed       # insert sample data
-```
+All routes under `/api`. Paginated via `?page=&pageSize=`. Errors: `{ code, message, details? }`.
 
-### 5. Start development servers
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET/POST` | `/api/stores` | list (filterable) / create |
+| `GET/PATCH/DELETE` | `/api/stores/:id` | read / update / delete (409 if has inventory) |
+| `GET/POST` | `/api/products` | list (filter by category, price, active) / create |
+| `GET/PATCH/DELETE` | `/api/products/:id` | read / update / delete (409 if has inventory) |
+| `GET/POST` | `/api/inventory` | list (filter by store, category, stock level) / create |
+| `PATCH/DELETE` | `/api/inventory/:id` | update quantity / delete |
+| `POST` | `/api/inventory/batch` | bulk upsert from CSV (see below) |
 
-```bash
-npm run dev           # starts both backend (port 3000) and frontend (port 5173)
-```
+## Non-trivial Feature: Batch CSV Import
 
-The Vite dev server proxies `/api/*` requests to the backend automatically.
+The inventory page lets users upload a CSV (`store_name,sku,quantity`) to bulk-create or update stock records.
 
----
+**Frontend** - PapaParse parses the file client-side; each row is validated against a shared Zod schema. A preview table shows valid/error badges before the user confirms.
 
-## Docker Compose (full stack)
+**Backend** (`POST /api/inventory/batch`) - Resolves store names and SKUs via two batch queries, then validates every row (unknown store/product, inactive records, duplicate pairs). If any row fails validation the entire import is rejected. On success, all rows are upserted inside a single Prisma transaction and the response reports created/updated counts per row.
 
-```bash
-docker compose up
-```
+## Decisions & Trade-offs
 
-This starts MySQL, the backend (tsx watch), and the frontend (Vite dev server) with hot reload via volume mounts.
+- **Shared contract package** (`shared/`) - Zod schemas are the single source of truth; they generate TypeScript types for the frontend and JSON Schemas for Fastify validation.
+- **Hash-based routing** - Three pages, no external router. Keeps the bundle small and avoids server-side route config.
+- **Redux Toolkit** - Predictable state with good devtools; async thunks keep data-fetching in slices.
+- **Fastify over Express** - Built-in JSON Schema validation, serialization, and better throughput.
+- **Mocked Prisma in unit tests** - Fast and deterministic, but no real DB coverage; integration tests would complement this.
+- **All-or-nothing batch import** - If any row fails validation the whole import is rejected. Simpler to reason about than partial success, and the preview step gives users a chance to fix errors first.
 
----
+## Testing Approach
 
-## Available scripts
+- **Backend unit tests** (Vitest) - Each route module has tests with a mocked Prisma client. Covers happy paths, not-found / conflict / validation errors, pagination metadata, and response field completeness.
+- **E2E tests** (Playwright) - Full CRUD flows for stores, products, and inventory; navigation between pages. Playwright auto-starts the dev servers.
+- **Frontend unit tests** - Testing Library + Vitest are wired up but no component tests have been written yet.
 
-| Command              | Description                            |
-| -------------------- | -------------------------------------- |
-| `npm run dev`        | Start backend + frontend in watch mode |
-| `npm run build`      | Build both packages                    |
-| `npm run test`       | Run all Vitest unit tests              |
-| `npm run test:e2e`   | Run Playwright e2e tests               |
-| `npm run lint`       | ESLint across all packages             |
-| `npm run lint:fix`   | ESLint auto-fix                        |
-| `npm run format`     | Prettier format                        |
-| `npm run db:migrate` | Prisma migrate dev                     |
-| `npm run db:seed`    | Seed the database                      |
-| `npm run db:studio`  | Open Prisma Studio                     |
+## If I Had More Time
 
----
-
-## Domain Model
-
-The system manages **Stores**, **Products**, and **Inventory** (product-in-store stock):
-
-- **Store** — physical location where products are stocked
-- **Product** — global catalog record with unique SKU
-- **Inventory** — links a Store and Product with a stock quantity
-
-API endpoints for Store, Product, and Inventory CRUD are being implemented.
-
----
-
-## Production
-
-In production mode (`NODE_ENV=production`) the backend also serves the built frontend from `../frontend/dist`, so a single process handles everything. Use the multi-stage Dockerfiles:
-
-```bash
-docker compose -f docker-compose.yml up --build
-```
+- **Frontend component tests** - Cover Redux slices, form validation edge cases, and error states with Testing Library.
+- **Integration tests with a real database** - Use Testcontainers (or a Docker-based MySQL) to catch migration and query issues that mocked tests miss.
+- **Authentication & RBAC** - There is currently no auth; adding JWT or session-based login with role-based access would be the natural next step for a production deployment.

@@ -19,8 +19,7 @@
     "db:migrate": "npm run db:migrate -w tiny-inventory-backend",
     "db:seed": "npm run db:seed -w tiny-inventory-backend",
     "db:studio": "npm run db:studio -w tiny-inventory-backend",
-    "generate:contracts": "npm run db:generate -w tiny-inventory-backend",
-    "check:drift": "tsx scripts/check-contract-drift.ts"
+    "generate:contracts": "npm run db:generate -w tiny-inventory-backend"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
