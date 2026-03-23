@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Store, CreateStore } from 'tiny-inventory-shared';
+import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +44,7 @@ export default function StoreFormDialog({ open, onClose, onSubmit, store }: Prop
       await onSubmit({ name: trimmed });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof ApiError ? err.body.message : 'An error occurred');
     } finally {
       setSubmitting(false);
     }

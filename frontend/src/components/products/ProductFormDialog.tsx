@@ -78,7 +78,7 @@ export default function ProductFormDialog({ open, onClose, onSubmit, product }: 
       if (err instanceof ApiError && err.status === 409) {
         setError('A product with this SKU already exists');
       } else {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof ApiError ? err.body.message : 'An error occurred');
       }
     } finally {
       setSubmitting(false);

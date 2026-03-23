@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Store, Product } from 'tiny-inventory-shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchInventory, fetchStoreInventory, addInventory, editInventory, removeInventory } from '@/store/inventorySlice';
+import { fetchInventory, fetchStoreInventory } from '@/store/inventorySlice';
+import * as inventoryApi from '@/api/inventory';
+import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -71,21 +73,22 @@ export default function InventoryPage() {
   }, [load]);
 
   const handleAssign = async (data: { storeId: number; productId: number; quantity: number }) => {
-    await dispatch(addInventory(data)).unwrap();
+    await inventoryApi.createInventory(data);
     load();
   };
 
   const handleQuantityUpdate = async (id: number, quantity: number) => {
-    await dispatch(editInventory({ id, input: { quantity } })).unwrap();
+    await inventoryApi.updateInventory(id, { quantity });
     load();
   };
 
   const handleDelete = async (id: number) => {
     setActionError('');
     try {
-      await dispatch(removeInventory(id)).unwrap();
+      await inventoryApi.deleteInventory(id);
+      load();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Failed to remove assignment');
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to remove assignment');
     }
   };
 
