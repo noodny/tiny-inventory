@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table';
 import InventoryFiltersBar, { emptyFilters, type InventoryFilters } from '@/components/inventory/InventoryFilters';
 import AssignInventoryDialog from '@/components/inventory/AssignInventoryDialog';
+import ImportCsvDialog from '@/components/inventory/ImportCsvDialog';
 import QuantityEditCell from '@/components/inventory/QuantityEditCell';
 import * as storesApi from '@/api/stores';
 import * as productsApi from '@/api/products';
@@ -31,6 +32,7 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<InventoryFilters>(emptyFilters);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [actionError, setActionError] = useState('');
 
   const [stores, setStores] = useState<Store[]>([]);
@@ -103,7 +105,10 @@ export default function InventoryPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Inventory</h2>
-        <Button onClick={() => setDialogOpen(true)}>Assign Product</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>Import CSV</Button>
+          <Button onClick={() => setDialogOpen(true)}>Assign Product</Button>
+        </div>
       </div>
 
       <InventoryFiltersBar
@@ -194,6 +199,12 @@ export default function InventoryPage() {
         onSubmit={handleAssign}
         stores={stores}
         products={products}
+      />
+
+      <ImportCsvDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImportComplete={() => load()}
       />
     </div>
   );

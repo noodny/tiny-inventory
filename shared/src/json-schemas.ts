@@ -13,6 +13,8 @@ import {
   CreateInventorySchema,
   UpdateInventorySchema,
   InventoryListQuerySchema,
+  InventoryBatchRequestSchema,
+  InventoryBatchResponseSchema,
   PaginationMetaSchema,
   ErrorSchema,
   IdParamSchema,
@@ -45,6 +47,8 @@ export const inventoryWithRelationsResponse = toJS(InventoryWithRelationsSchema)
 export const inventoryCreateBody = toJS(CreateInventorySchema);
 export const inventoryUpdateBody = toJS(UpdateInventorySchema);
 export const inventoryListQuery = toJS(InventoryListQuerySchema);
+export const inventoryBatchBody = toJS(InventoryBatchRequestSchema);
+export const inventoryBatchResponse = toJS(InventoryBatchResponseSchema);
 
 // Common
 export const errorSchema = toJS(ErrorSchema);

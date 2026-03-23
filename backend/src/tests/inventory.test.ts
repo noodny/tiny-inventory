@@ -37,6 +37,7 @@ const inventoryMock = {
   count: vi.fn().mockResolvedValue(1),
   update: vi.fn().mockResolvedValue({ ...mockInventory, quantity: 20 }),
   delete: vi.fn().mockResolvedValue(mockInventory),
+  upsert: vi.fn().mockResolvedValue(mockInventory),
 };
 
 const mockPrisma = {
@@ -203,5 +204,134 @@ describe('Inventory routes', () => {
     inventoryMock.delete.mockRejectedValueOnce(p2025);
     const res = await app.inject({ method: 'DELETE', url: '/api/inventory/999' });
     expect(res.statusCode).toBe(404);
+  });
+
+  // POST /api/inventory/batch
+  describe('POST /api/inventory/batch', () => {
+    const mockProduct2 = { ...mockProduct, id: 2, sku: 'HUB-007', name: 'USB Hub' };
+    const inactiveStore = { ...mockStore, id: 3, name: 'Closed Store', isActive: false };
+    const inactiveProduct = { ...mockProduct, id: 4, sku: 'OLD-001', isActive: false };
+
+    beforeEach(() => {
+      storeMock.findMany.mockResolvedValue([mockStore]);
+      productMock.findMany.mockResolvedValue([mockProduct, mockProduct2]);
+      inventoryMock.findMany.mockResolvedValue([]);
+      inventoryMock.upsert.mockResolvedValue(mockInventory);
+    });
+
+    it('creates and updates inventory records', async () => {
+      // One existing record (update), one new (create)
+      inventoryMock.findMany.mockResolvedValue([{ storeId: 1, productId: 1 }]);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: {
+          items: [
+            { storeName: 'Store', sku: 'KB-001', quantity: 50 },
+            { storeName: 'Store', sku: 'HUB-007', quantity: 25 },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.success).toBe(true);
+      expect(body.created).toBe(1);
+      expect(body.updated).toBe(1);
+      expect(body.errors).toHaveLength(0);
+      expect(body.results).toHaveLength(2);
+      expect(inventoryMock.upsert).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns error for unknown store name', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [{ storeName: 'Nonexistent', sku: 'KB-001', quantity: 10 }] },
+      });
+
+      const body = res.json();
+      expect(body.success).toBe(false);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].error).toContain('not found');
+      expect(inventoryMock.upsert).not.toHaveBeenCalled();
+    });
+
+    it('returns error for unknown SKU', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [{ storeName: 'Store', sku: 'NOPE-999', quantity: 10 }] },
+      });
+
+      const body = res.json();
+      expect(body.success).toBe(false);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].error).toContain('not found');
+    });
+
+    it('returns error for inactive store', async () => {
+      storeMock.findMany.mockResolvedValue([inactiveStore]);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [{ storeName: 'Closed Store', sku: 'KB-001', quantity: 10 }] },
+      });
+
+      const body = res.json();
+      expect(body.success).toBe(false);
+      expect(body.errors[0].error).toContain('inactive');
+    });
+
+    it('returns error for inactive product', async () => {
+      productMock.findMany.mockResolvedValue([inactiveProduct]);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [{ storeName: 'Store', sku: 'OLD-001', quantity: 10 }] },
+      });
+
+      const body = res.json();
+      expect(body.success).toBe(false);
+      expect(body.errors[0].error).toContain('inactive');
+    });
+
+    it('returns error for duplicate rows in batch', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: {
+          items: [
+            { storeName: 'Store', sku: 'KB-001', quantity: 10 },
+            { storeName: 'Store', sku: 'KB-001', quantity: 20 },
+          ],
+        },
+      });
+
+      const body = res.json();
+      expect(body.success).toBe(false);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].row).toBe(2);
+      expect(body.errors[0].error).toContain('Duplicate');
+    });
+
+    it('rejects empty items array with 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [] },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects negative quantity with 400', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/inventory/batch',
+        payload: { items: [{ storeName: 'Store', sku: 'KB-001', quantity: -5 }] },
+      });
+      expect(res.statusCode).toBe(400);
+    });
   });
 });

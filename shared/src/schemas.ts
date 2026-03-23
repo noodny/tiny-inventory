@@ -121,6 +121,43 @@ export const UpdateInventorySchema = z.object({
   quantity: z.number().int().min(0),
 });
 
+// ---------------------------------------------------------------------------
+// Inventory Batch Import
+// ---------------------------------------------------------------------------
+
+export const InventoryBatchItemSchema = z.object({
+  storeName: z.string().min(1, 'Store name is required'),
+  sku: z.string().min(1, 'SKU is required'),
+  quantity: z.number().int('Quantity must be an integer').min(0, 'Quantity must be >= 0'),
+});
+
+export const InventoryBatchRequestSchema = z.object({
+  items: z.array(InventoryBatchItemSchema).min(1, 'At least one item is required').max(1000, 'Maximum 1000 items per batch'),
+});
+
+export const InventoryBatchResultItemSchema = z.object({
+  row: z.number().int(),
+  storeName: z.string(),
+  sku: z.string(),
+  quantity: z.number().int(),
+  status: z.enum(['created', 'updated']),
+});
+
+export const InventoryBatchErrorItemSchema = z.object({
+  row: z.number().int(),
+  storeName: z.string(),
+  sku: z.string(),
+  error: z.string(),
+});
+
+export const InventoryBatchResponseSchema = z.object({
+  success: z.boolean(),
+  created: z.number().int(),
+  updated: z.number().int(),
+  errors: z.array(InventoryBatchErrorItemSchema),
+  results: z.array(InventoryBatchResultItemSchema),
+});
+
 export const InventoryListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -192,6 +229,12 @@ export type Inventory = z.infer<typeof InventorySchema>;
 export type InventoryWithRelations = z.infer<typeof InventoryWithRelationsSchema>;
 export type CreateInventory = z.infer<typeof CreateInventorySchema>;
 export type UpdateInventory = z.infer<typeof UpdateInventorySchema>;
+
+export type InventoryBatchItem = z.infer<typeof InventoryBatchItemSchema>;
+export type InventoryBatchRequest = z.infer<typeof InventoryBatchRequestSchema>;
+export type InventoryBatchResultItem = z.infer<typeof InventoryBatchResultItemSchema>;
+export type InventoryBatchErrorItem = z.infer<typeof InventoryBatchErrorItemSchema>;
+export type InventoryBatchResponse = z.infer<typeof InventoryBatchResponseSchema>;
 
 export type PaginationMeta = z.infer<typeof PaginationMetaSchema>;
 export type PaginatedResult<T> = { data: T[]; meta: PaginationMeta };

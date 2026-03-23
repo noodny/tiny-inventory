@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { jsonSchemas } from 'tiny-inventory-shared';
-import type { CreateInventory, UpdateInventory, InventoryListQuery } from 'tiny-inventory-shared';
+import type { CreateInventory, UpdateInventory, InventoryListQuery, InventoryBatchRequest, InventoryBatchErrorItem, InventoryBatchResultItem } from 'tiny-inventory-shared';
 import { notFound } from '../plugins/errors';
 import { parsePagination, paginate } from '../utils/pagination';
 import { handlePrismaError } from '../utils/prisma-errors';
@@ -12,6 +12,8 @@ const {
   inventoryCreateBody,
   inventoryUpdateBody,
   inventoryListQuery,
+  inventoryBatchBody,
+  inventoryBatchResponse,
   idParamSchema,
   storeIdParamSchema,
   errorSchema,
@@ -75,6 +77,125 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
       });
 
       return reply.status(201).send(inventory);
+    },
+  });
+
+  // POST /api/inventory/batch
+  fastify.post<{ Body: InventoryBatchRequest }>('/inventory/batch', {
+    schema: {
+      body: inventoryBatchBody,
+      response: { 200: inventoryBatchResponse },
+    },
+    handler: async (request, reply) => {
+      const { items } = request.body;
+
+      // 1. Collect unique store names and SKUs
+      const storeNames = [...new Set(items.map((i) => i.storeName))];
+      const skus = [...new Set(items.map((i) => i.sku))];
+
+      // 2. Batch-fetch stores and products
+      const [stores, products] = await Promise.all([
+        fastify.prisma.store.findMany({ where: { name: { in: storeNames } } }),
+        fastify.prisma.product.findMany({ where: { sku: { in: skus } } }),
+      ]);
+
+      // 3. Build lookup maps
+      const storesByName = new Map<string, typeof stores>();
+      for (const s of stores) {
+        const list = storesByName.get(s.name) ?? [];
+        list.push(s);
+        storesByName.set(s.name, list);
+      }
+      const productsBySku = new Map(products.map((p) => [p.sku, p]));
+
+      // 4. Validate each row
+      const errors: InventoryBatchErrorItem[] = [];
+      const resolvedRows: { row: number; storeId: number; productId: number; quantity: number; storeName: string; sku: string }[] = [];
+      const seenPairs = new Set<string>();
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const row = i + 1;
+
+        // Check store
+        const matchingStores = storesByName.get(item.storeName);
+        if (!matchingStores || matchingStores.length === 0) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' not found` });
+          continue;
+        }
+        if (matchingStores.length > 1) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Ambiguous store name '${item.storeName}' — ${matchingStores.length} stores match` });
+          continue;
+        }
+        const store = matchingStores[0];
+        if (!store.isActive) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' is inactive` });
+          continue;
+        }
+
+        // Check product
+        const product = productsBySku.get(item.sku);
+        if (!product) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product with SKU '${item.sku}' not found` });
+          continue;
+        }
+        if (!product.isActive) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product '${item.sku}' is inactive` });
+          continue;
+        }
+
+        // Check duplicate within batch
+        const pairKey = `${store.id}:${product.id}`;
+        if (seenPairs.has(pairKey)) {
+          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Duplicate entry for store '${item.storeName}' + SKU '${item.sku}' in this batch` });
+          continue;
+        }
+        seenPairs.add(pairKey);
+
+        resolvedRows.push({ row, storeId: store.id, productId: product.id, quantity: item.quantity, storeName: item.storeName, sku: item.sku });
+      }
+
+      // 5. If errors, return without importing
+      if (errors.length > 0) {
+        return reply.send({ success: false, created: 0, updated: 0, errors, results: [] });
+      }
+
+      // 6. Upsert in transaction
+      const results: InventoryBatchResultItem[] = [];
+      await fastify.prisma.$transaction(async (tx) => {
+        // Pre-query existing records to determine create vs update
+        const existing = await tx.inventory.findMany({
+          where: {
+            OR: resolvedRows.map((r) => ({ storeId: r.storeId, productId: r.productId })),
+          },
+          select: { storeId: true, productId: true },
+        });
+        const existingSet = new Set(existing.map((e) => `${e.storeId}:${e.productId}`));
+
+        for (const row of resolvedRows) {
+          const pairKey = `${row.storeId}:${row.productId}`;
+          const isUpdate = existingSet.has(pairKey);
+
+          await tx.inventory.upsert({
+            where: { storeId_productId: { storeId: row.storeId, productId: row.productId } },
+            create: { storeId: row.storeId, productId: row.productId, quantity: row.quantity },
+            update: { quantity: row.quantity },
+          });
+
+          results.push({
+            row: row.row,
+            storeName: row.storeName,
+            sku: row.sku,
+            quantity: row.quantity,
+            status: isUpdate ? 'updated' : 'created',
+          });
+        }
+      });
+
+      const created = results.filter((r) => r.status === 'created').length;
+      const updated = results.filter((r) => r.status === 'updated').length;
+
+      return reply.send({ success: true, created, updated, errors: [], results });
     },
   });
 

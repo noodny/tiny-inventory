@@ -1,11 +1,14 @@
 import {
   InventoryWithRelationsSchema,
   InventorySchema,
+  InventoryBatchResponseSchema,
   paginatedSchema,
   type Inventory,
   type InventoryWithRelations,
   type CreateInventory,
   type UpdateInventory,
+  type InventoryBatchItem,
+  type InventoryBatchResponse,
   type PaginatedResult,
 } from 'tiny-inventory-shared';
 import { request } from './client';
@@ -55,4 +58,14 @@ export async function updateInventory(id: number, input: UpdateInventory): Promi
 
 export async function deleteInventory(id: number): Promise<void> {
   await request(`/inventory/${id}`, { method: 'DELETE' });
+}
+
+export async function batchImportInventory(
+  items: InventoryBatchItem[],
+): Promise<InventoryBatchResponse> {
+  const data = await request('/inventory/batch', {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  });
+  return InventoryBatchResponseSchema.parse(data);
 }
