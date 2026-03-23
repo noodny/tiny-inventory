@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import path from 'path';
 import prismaPlugin from './plugins/prisma';
+import errorPlugin from './plugins/errors';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -15,6 +16,9 @@ export function buildApp(opts: BuildAppOptions = {}) {
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
     },
+    ajv: {
+      customOptions: { coerceTypes: true },
+    },
   });
 
   app.register(cors, {
@@ -22,6 +26,7 @@ export function buildApp(opts: BuildAppOptions = {}) {
   });
 
   app.register(prismaPlugin, { prismaClient: opts.prismaClient });
+  app.register(errorPlugin);
 
   app.get('/health', async () => ({ status: 'ok' }));
 
