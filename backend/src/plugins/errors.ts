@@ -1,15 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyError } from 'fastify';
-
-/**
- * Standardized error payload as per the business specification:
- *   { code: string, message: string, details?: unknown }
- */
-export interface AppError {
-  code: string;
-  message: string;
-  details?: unknown;
-}
+import type { AppError } from 'tiny-inventory-shared';
 
 /**
  * Typed application error that carries an HTTP status code.

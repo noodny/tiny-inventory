@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AppShell from './components/layout/AppShell';
+import ErrorBoundary from './components/ErrorBoundary';
 import StoresPage from './pages/StoresPage';
 import ProductsPage from './pages/ProductsPage';
 import InventoryPage from './pages/InventoryPage';
@@ -18,11 +19,13 @@ export default function App() {
   }, []);
 
   return (
-    <AppShell>
-      {page === 'stores' && <StoresPage />}
-      {page === 'products' && <ProductsPage />}
-      {page === 'inventory' && <InventoryPage />}
-      {!['stores', 'products', 'inventory'].includes(page) && <StoresPage />}
-    </AppShell>
+    <ErrorBoundary>
+      <AppShell>
+        {page === 'stores' && <StoresPage />}
+        {page === 'products' && <ProductsPage />}
+        {page === 'inventory' && <InventoryPage />}
+        {!['stores', 'products', 'inventory'].includes(page) && <StoresPage />}
+      </AppShell>
+    </ErrorBoundary>
   );
 }

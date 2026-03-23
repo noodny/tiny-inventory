@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Product, CreateProduct } from 'tiny-inventory-shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchProducts } from '@/store/productsSlice';
-import * as api from '@/api/products';
+import { fetchProducts, addProduct, editProduct, removeProduct } from '@/store/productsSlice';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,21 +39,33 @@ export default function ProductsPage() {
   }, [load, page]);
 
   const handleCreate = async (data: CreateProduct) => {
-    await api.createProduct(data);
-    load(1);
-    setPage(1);
+    setActionError('');
+    try {
+      await dispatch(addProduct(data)).unwrap();
+      load(1);
+      setPage(1);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to create product');
+      throw err;
+    }
   };
 
   const handleEdit = async (data: CreateProduct) => {
     if (!editingProduct) return;
-    await api.updateProduct(editingProduct.id, data);
-    load();
+    setActionError('');
+    try {
+      await dispatch(editProduct({ id: editingProduct.id, input: data })).unwrap();
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to update product');
+      throw err;
+    }
   };
 
   const handleDeactivate = async (product: Product) => {
     setActionError('');
     try {
-      await api.updateProduct(product.id, { isActive: !product.isActive });
+      await dispatch(editProduct({ id: product.id, input: { isActive: !product.isActive } })).unwrap();
       load();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.body.message : 'Failed to update product');
@@ -64,14 +75,10 @@ export default function ProductsPage() {
   const handleDelete = async (id: number) => {
     setActionError('');
     try {
-      await api.deleteProduct(id);
+      await dispatch(removeProduct(id)).unwrap();
       load();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setActionError(err.body.message);
-      } else {
-        setActionError(err instanceof ApiError ? err.body.message : 'Failed to delete product');
-      }
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to delete product');
     }
   };
 

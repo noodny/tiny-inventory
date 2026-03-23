@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Store, Product } from 'tiny-inventory-shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchInventory, fetchStoreInventory } from '@/store/inventorySlice';
-import * as inventoryApi from '@/api/inventory';
+import { fetchInventory, fetchStoreInventory, addInventory, editInventory, removeInventory } from '@/store/inventorySlice';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +21,9 @@ import InventoryFiltersBar, { emptyFilters, type InventoryFilters } from '@/comp
 import AssignInventoryDialog from '@/components/inventory/AssignInventoryDialog';
 import ImportCsvDialog from '@/components/inventory/ImportCsvDialog';
 import QuantityEditCell from '@/components/inventory/QuantityEditCell';
-import * as storesApi from '@/api/stores';
-import * as productsApi from '@/api/products';
+import { fetchAll } from '@/api/helpers';
+import { fetchStores as fetchStoresApi } from '@/api/stores';
+import { fetchProducts as fetchProductsApi } from '@/api/products';
 
 export default function InventoryPage() {
   const dispatch = useAppDispatch();
@@ -39,8 +39,8 @@ export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    storesApi.fetchStores({ pageSize: 100 }).then((r) => setStores(r.data));
-    productsApi.fetchProducts({ pageSize: 100 }).then((r) => setProducts(r.data));
+    fetchAll(fetchStoresApi).then(setStores);
+    fetchAll(fetchProductsApi).then(setProducts);
   }, []);
 
   const buildQuery = useCallback(() => {
@@ -66,19 +66,30 @@ export default function InventoryPage() {
   }, [load]);
 
   const handleAssign = async (data: { storeId: number; productId: number; quantity: number }) => {
-    await inventoryApi.createInventory(data);
-    load();
+    setActionError('');
+    try {
+      await dispatch(addInventory(data)).unwrap();
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to assign product');
+      throw err;
+    }
   };
 
   const handleQuantityUpdate = async (id: number, quantity: number) => {
-    await inventoryApi.updateInventory(id, { quantity });
-    load();
+    setActionError('');
+    try {
+      await dispatch(editInventory({ id, input: { quantity } })).unwrap();
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to update quantity');
+    }
   };
 
   const handleDelete = async (id: number) => {
     setActionError('');
     try {
-      await inventoryApi.deleteInventory(id);
+      await dispatch(removeInventory(id)).unwrap();
       load();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.body.message : 'Failed to remove assignment');

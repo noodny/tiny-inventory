@@ -83,6 +83,13 @@ const inventorySlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message ?? 'Failed to fetch inventory';
       })
+      .addCase(editInventory.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((i) => i.id === action.payload.id);
+        if (idx !== -1) {
+          state.items[idx].quantity = action.payload.quantity;
+          state.items[idx].updatedAt = action.payload.updatedAt;
+        }
+      })
       .addCase(removeInventory.fulfilled, (state, action) => {
         state.items = state.items.filter((i) => i.id !== action.payload);
       });

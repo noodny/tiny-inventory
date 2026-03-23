@@ -45,6 +45,20 @@ function buildInventoryWhere(query: InventoryListQuery, storeId?: number): Prism
   return where;
 }
 
+function validateNoDuplicatePairs(items: InventoryBatchRequest['items']): InventoryBatchErrorItem[] {
+  const seen = new Set<string>();
+  const errors: InventoryBatchErrorItem[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const pairKey = `${item.storeName}:${item.sku}`;
+    if (seen.has(pairKey)) {
+      errors.push({ row: i + 1, storeName: item.storeName, sku: item.sku, error: `Duplicate entry for store '${item.storeName}' + SKU '${item.sku}' in this batch` });
+    }
+    seen.add(pairKey);
+  }
+  return errors;
+}
+
 const includeRelations = { store: true, product: true } as const;
 
 export default async function inventoryRoutes(fastify: FastifyInstance) {
@@ -89,113 +103,119 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
     handler: async (request, reply) => {
       const { items } = request.body;
 
-      // 1. Collect unique store names and SKUs
-      const storeNames = [...new Set(items.map((i) => i.storeName))];
-      const skus = [...new Set(items.map((i) => i.sku))];
-
-      // 2. Batch-fetch stores and products
-      const [stores, products] = await Promise.all([
-        fastify.prisma.store.findMany({ where: { name: { in: storeNames } } }),
-        fastify.prisma.product.findMany({ where: { sku: { in: skus } } }),
-      ]);
-
-      // 3. Build lookup maps
-      const storesByName = new Map<string, typeof stores>();
-      for (const s of stores) {
-        const list = storesByName.get(s.name) ?? [];
-        list.push(s);
-        storesByName.set(s.name, list);
-      }
-      const productsBySku = new Map(products.map((p) => [p.sku, p]));
-
-      // 4. Validate each row
-      const errors: InventoryBatchErrorItem[] = [];
-      const resolvedRows: { row: number; storeId: number; productId: number; quantity: number; storeName: string; sku: string }[] = [];
-      const seenPairs = new Set<string>();
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const row = i + 1;
-
-        // Check store
-        const matchingStores = storesByName.get(item.storeName);
-        if (!matchingStores || matchingStores.length === 0) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' not found` });
-          continue;
-        }
-        if (matchingStores.length > 1) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Ambiguous store name '${item.storeName}' — ${matchingStores.length} stores match` });
-          continue;
-        }
-        const store = matchingStores[0];
-        if (!store.isActive) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' is inactive` });
-          continue;
-        }
-
-        // Check product
-        const product = productsBySku.get(item.sku);
-        if (!product) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product with SKU '${item.sku}' not found` });
-          continue;
-        }
-        if (!product.isActive) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product '${item.sku}' is inactive` });
-          continue;
-        }
-
-        // Check duplicate within batch
-        const pairKey = `${store.id}:${product.id}`;
-        if (seenPairs.has(pairKey)) {
-          errors.push({ row, storeName: item.storeName, sku: item.sku, error: `Duplicate entry for store '${item.storeName}' + SKU '${item.sku}' in this batch` });
-          continue;
-        }
-        seenPairs.add(pairKey);
-
-        resolvedRows.push({ row, storeId: store.id, productId: product.id, quantity: item.quantity, storeName: item.storeName, sku: item.sku });
+      const duplicateErrors = validateNoDuplicatePairs(items);
+      if (duplicateErrors.length > 0) {
+        return reply.send({ success: false, created: 0, updated: 0, errors: duplicateErrors, results: [] });
       }
 
-      // 5. If errors, return without importing
-      if (errors.length > 0) {
-        return reply.send({ success: false, created: 0, updated: 0, errors, results: [] });
-      }
+      // Split into batches of 100, each with its own transaction (validate + upsert)
+      const BATCH_SIZE = 100;
+      const allErrors: InventoryBatchErrorItem[] = [];
+      const allResults: InventoryBatchResultItem[] = [];
 
-      // 6. Upsert in transaction
-      const results: InventoryBatchResultItem[] = [];
-      await fastify.prisma.$transaction(async (tx) => {
-        // Pre-query existing records to determine create vs update
-        const existing = await tx.inventory.findMany({
-          where: {
-            OR: resolvedRows.map((r) => ({ storeId: r.storeId, productId: r.productId })),
-          },
-          select: { storeId: true, productId: true },
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const chunk = items.slice(i, i + BATCH_SIZE);
+        const chunkOffset = i;
+
+        await fastify.prisma.$transaction(async (tx) => {
+          // 1. Collect unique store names and SKUs for this chunk
+          const storeNames = [...new Set(chunk.map((c) => c.storeName))];
+          const skus = [...new Set(chunk.map((c) => c.sku))];
+
+          // 2. Fetch stores and products
+          const [stores, products] = await Promise.all([
+            tx.store.findMany({ where: { name: { in: storeNames } } }),
+            tx.product.findMany({ where: { sku: { in: skus } } }),
+          ]);
+
+          // 3. Build lookup maps
+          const storesByName = new Map<string, typeof stores>();
+          for (const s of stores) {
+            const list = storesByName.get(s.name) ?? [];
+            list.push(s);
+            storesByName.set(s.name, list);
+          }
+          const productsBySku = new Map(products.map((p) => [p.sku, p]));
+
+          // 4. Validate each row
+          type ResolvedRow = { row: number; storeId: number; productId: number; quantity: number; storeName: string; sku: string };
+          const resolvedRows: ResolvedRow[] = [];
+
+          for (let j = 0; j < chunk.length; j++) {
+            const item = chunk[j];
+            const row = chunkOffset + j + 1;
+
+            const matchingStores = storesByName.get(item.storeName);
+            if (!matchingStores || matchingStores.length === 0) {
+              allErrors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' not found` });
+              continue;
+            }
+            if (matchingStores.length > 1) {
+              allErrors.push({ row, storeName: item.storeName, sku: item.sku, error: `Ambiguous store name '${item.storeName}' — ${matchingStores.length} stores match` });
+              continue;
+            }
+            const store = matchingStores[0];
+            if (!store.isActive) {
+              allErrors.push({ row, storeName: item.storeName, sku: item.sku, error: `Store '${item.storeName}' is inactive` });
+              continue;
+            }
+
+            const product = productsBySku.get(item.sku);
+            if (!product) {
+              allErrors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product with SKU '${item.sku}' not found` });
+              continue;
+            }
+            if (!product.isActive) {
+              allErrors.push({ row, storeName: item.storeName, sku: item.sku, error: `Product '${item.sku}' is inactive` });
+              continue;
+            }
+
+            resolvedRows.push({ row, storeId: store.id, productId: product.id, quantity: item.quantity, storeName: item.storeName, sku: item.sku });
+          }
+
+          // 5. If this chunk has no valid rows, skip upsert
+          if (resolvedRows.length === 0) return;
+
+          // 6. Pre-query existing records to determine create vs update
+          const existing = await tx.inventory.findMany({
+            where: {
+              OR: resolvedRows.map((r) => ({ storeId: r.storeId, productId: r.productId })),
+            },
+            select: { storeId: true, productId: true },
+          });
+          const existingSet = new Set(existing.map((e) => `${e.storeId}:${e.productId}`));
+
+          // 7. Bulk upsert via raw SQL
+          const values = resolvedRows.map((r) =>
+            Prisma.sql`(${r.storeId}, ${r.productId}, ${r.quantity}, NOW(), NOW())`
+          );
+          await tx.$executeRaw`
+            INSERT INTO inventory (storeId, productId, quantity, createdAt, updatedAt)
+            VALUES ${Prisma.join(values)}
+            ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), updatedAt = NOW()
+          `;
+
+          for (const row of resolvedRows) {
+            const pairKey = `${row.storeId}:${row.productId}`;
+            allResults.push({
+              row: row.row,
+              storeName: row.storeName,
+              sku: row.sku,
+              quantity: row.quantity,
+              status: existingSet.has(pairKey) ? 'updated' : 'created',
+            });
+          }
         });
-        const existingSet = new Set(existing.map((e) => `${e.storeId}:${e.productId}`));
+      }
 
-        for (const row of resolvedRows) {
-          const pairKey = `${row.storeId}:${row.productId}`;
-          const isUpdate = existingSet.has(pairKey);
+      if (allErrors.length > 0) {
+        return reply.send({ success: false, created: 0, updated: 0, errors: allErrors, results: [] });
+      }
 
-          await tx.inventory.upsert({
-            where: { storeId_productId: { storeId: row.storeId, productId: row.productId } },
-            create: { storeId: row.storeId, productId: row.productId, quantity: row.quantity },
-            update: { quantity: row.quantity },
-          });
+      const created = allResults.filter((r) => r.status === 'created').length;
+      const updated = allResults.filter((r) => r.status === 'updated').length;
 
-          results.push({
-            row: row.row,
-            storeName: row.storeName,
-            sku: row.sku,
-            quantity: row.quantity,
-            status: isUpdate ? 'updated' : 'created',
-          });
-        }
-      });
-
-      const created = results.filter((r) => r.status === 'created').length;
-      const updated = results.filter((r) => r.status === 'updated').length;
-
-      return reply.send({ success: true, created, updated, errors: [], results });
+      return reply.send({ success: true, created, updated, errors: [], results: allResults });
     },
   });
 

@@ -45,6 +45,7 @@ const mockPrisma = {
   product: productMock,
   inventory: inventoryMock,
   $transaction: vi.fn().mockImplementation((fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
+  $executeRaw: vi.fn().mockResolvedValue(0),
   $disconnect: async () => {},
 } as never;
 
@@ -220,8 +221,10 @@ describe('Inventory routes', () => {
     });
 
     it('creates and updates inventory records', async () => {
-      // One existing record (update), one new (create)
-      inventoryMock.findMany.mockResolvedValue([{ storeId: 1, productId: 1 }]);
+      // First findMany (validation tx) returns stores/products, second findMany (upsert tx) returns existing
+      inventoryMock.findMany
+        .mockResolvedValueOnce([mockInventoryWithRelations]) // GET list call (if any)
+        .mockResolvedValueOnce([{ storeId: 1, productId: 1 }]); // existing check in upsert tx
 
       const res = await app.inject({
         method: 'POST',
@@ -241,7 +244,7 @@ describe('Inventory routes', () => {
       expect(body.updated).toBe(1);
       expect(body.errors).toHaveLength(0);
       expect(body.results).toHaveLength(2);
-      expect(inventoryMock.upsert).toHaveBeenCalledTimes(2);
+      expect((mockPrisma as unknown as { $executeRaw: ReturnType<typeof vi.fn> }).$executeRaw).toHaveBeenCalled();
     });
 
     it('returns error for unknown store name', async () => {
@@ -255,7 +258,7 @@ describe('Inventory routes', () => {
       expect(body.success).toBe(false);
       expect(body.errors).toHaveLength(1);
       expect(body.errors[0].error).toContain('not found');
-      expect(inventoryMock.upsert).not.toHaveBeenCalled();
+      expect((mockPrisma as unknown as { $executeRaw: ReturnType<typeof vi.fn> }).$executeRaw).not.toHaveBeenCalled();
     });
 
     it('returns error for unknown SKU', async () => {

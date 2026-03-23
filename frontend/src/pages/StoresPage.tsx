@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Store } from 'tiny-inventory-shared';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchStores } from '@/store/storesSlice';
-import * as api from '@/api/stores';
+import { fetchStores, addStore, editStore, removeStore } from '@/store/storesSlice';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,21 +39,33 @@ export default function StoresPage() {
   }, [load, page]);
 
   const handleCreate = async (data: { name: string }) => {
-    await api.createStore(data);
-    load(1);
-    setPage(1);
+    setActionError('');
+    try {
+      await dispatch(addStore(data)).unwrap();
+      load(1);
+      setPage(1);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to create store');
+      throw err;
+    }
   };
 
   const handleEdit = async (data: { name: string }) => {
     if (!editingStore) return;
-    await api.updateStore(editingStore.id, data);
-    load();
+    setActionError('');
+    try {
+      await dispatch(editStore({ id: editingStore.id, input: data })).unwrap();
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to update store');
+      throw err;
+    }
   };
 
   const handleDeactivate = async (store: Store) => {
     setActionError('');
     try {
-      await api.updateStore(store.id, { isActive: !store.isActive });
+      await dispatch(editStore({ id: store.id, input: { isActive: !store.isActive } })).unwrap();
       load();
     } catch (err) {
       setActionError(err instanceof ApiError ? err.body.message : 'Failed to update store');
@@ -64,14 +75,10 @@ export default function StoresPage() {
   const handleDelete = async (id: number) => {
     setActionError('');
     try {
-      await api.deleteStore(id);
+      await dispatch(removeStore(id)).unwrap();
       load();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setActionError(err.body.message);
-      } else {
-        setActionError(err instanceof ApiError ? err.body.message : 'Failed to delete store');
-      }
+      setActionError(err instanceof ApiError ? err.body.message : 'Failed to delete store');
     }
   };
 

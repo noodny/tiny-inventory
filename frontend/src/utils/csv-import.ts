@@ -43,7 +43,7 @@ export function parseInventoryCsv(file: File): Promise<CsvParseResult> {
 
         for (let i = 0; i < results.data.length; i++) {
           const raw = results.data[i];
-          const rowNumber = i + 2; // row 1 is header, data is 0-indexed
+          const rowNumber = i + 1; // row 1 is header, data is 0-indexed
 
           const candidate = {
             storeName: (raw['store_name'] ?? '').trim(),

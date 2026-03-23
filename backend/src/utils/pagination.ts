@@ -5,10 +5,10 @@ export interface PaginationParams {
   pageSize: number;
 }
 
-export function parsePagination(query: { page?: number; pageSize?: number }): PaginationParams {
+export function parsePagination(query: { page: number; pageSize: number }): PaginationParams {
   return {
-    page: query.page ?? 1,
-    pageSize: query.pageSize ?? 5,
+    page: query.page,
+    pageSize: query.pageSize,
   };
 }
 
