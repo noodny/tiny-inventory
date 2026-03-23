@@ -1,3 +1,4 @@
+import { PRODUCT_CATEGORIES } from 'tiny-inventory-shared';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -41,14 +42,18 @@ export default function InventoryFiltersBar({ filters, onChange, onReset }: Prop
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
-        <Label htmlFor="filter-category" className="text-xs">Category</Label>
-        <Input
-          id="filter-category"
-          placeholder="e.g. Peripherals"
-          value={filters.category}
-          onChange={(e) => update('category', e.target.value)}
-          className="h-9 w-40"
-        />
+        <Label className="text-xs">Category</Label>
+        <Select value={filters.category || 'all'} onValueChange={(v) => update('category', v === 'all' ? '' : (v ?? ''))}>
+          <SelectTrigger className="h-9 w-40">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {PRODUCT_CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1">
         <Label htmlFor="filter-min-price" className="text-xs">Min Price</Label>

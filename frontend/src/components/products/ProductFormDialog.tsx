@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
+import { PRODUCT_CATEGORIES } from 'tiny-inventory-shared';
 import type { Product, CreateProduct } from 'tiny-inventory-shared';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -45,7 +53,7 @@ export default function ProductFormDialog({ open, onClose, onSubmit, product }: 
     e.preventDefault();
     setError('');
 
-    if (!form.sku.trim() || !form.name.trim() || !form.category.trim() || !form.price) {
+    if (!form.sku.trim() || !form.name.trim() || !form.category || !form.price) {
       setError('SKU, name, category, and price are required');
       return;
     }
@@ -61,7 +69,7 @@ export default function ProductFormDialog({ open, onClose, onSubmit, product }: 
       await onSubmit({
         sku: form.sku.trim(),
         name: form.name.trim(),
-        category: form.category.trim(),
+        category: form.category as CreateProduct['category'],
         description: form.description.trim() || null,
         price,
       });
@@ -109,14 +117,20 @@ export default function ProductFormDialog({ open, onClose, onSubmit, product }: 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="product-category">Category</Label>
-              <Input
-                id="product-category"
-                name="category"
+              <Label>Category</Label>
+              <Select
                 value={form.category}
-                onChange={handleChange}
-                placeholder="e.g. Peripherals"
-              />
+                onValueChange={(v) => setForm((prev) => ({ ...prev, category: v ?? '' }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="product-price">Price</Label>

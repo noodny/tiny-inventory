@@ -31,6 +31,24 @@ export const StoreListQuerySchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Product categories
+// ---------------------------------------------------------------------------
+
+export const PRODUCT_CATEGORIES = [
+  'Peripherals',
+  'Furniture',
+  'Accessories',
+  'Electronics',
+  'Software',
+  'Networking',
+  'Storage',
+] as const;
+
+export const ProductCategorySchema = z.enum(PRODUCT_CATEGORIES);
+
+export type ProductCategory = z.infer<typeof ProductCategorySchema>;
+
+// ---------------------------------------------------------------------------
 // Product
 // ---------------------------------------------------------------------------
 
@@ -38,7 +56,7 @@ export const ProductSchema = z.object({
   id: z.number().int(),
   sku: z.string(),
   name: z.string(),
-  category: z.string(),
+  category: ProductCategorySchema,
   description: z.string().nullable(),
   price: z.string(), // Decimal serialized as string in JSON
   isActive: z.boolean(),
@@ -49,7 +67,7 @@ export const ProductSchema = z.object({
 export const CreateProductSchema = z.object({
   sku: z.string().min(1).max(100),
   name: z.string().min(1).max(255),
-  category: z.string().min(1).max(255),
+  category: ProductCategorySchema,
   description: z.string().max(1000).nullable().optional(),
   price: z.number().min(0),
 });
@@ -58,7 +76,7 @@ export const UpdateProductSchema = z
   .object({
     sku: z.string().min(1).max(100),
     name: z.string().min(1).max(255),
-    category: z.string().min(1).max(255),
+    category: ProductCategorySchema,
     description: z.string().max(1000).nullable(),
     price: z.number().min(0),
     isActive: z.boolean(),
@@ -69,7 +87,7 @@ export const ProductListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 
-  category: z.string().optional(),
+  category: ProductCategorySchema.optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   isActive: z.boolean().optional(),
@@ -108,7 +126,7 @@ export const InventoryListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 
   storeId: z.coerce.number().int().optional(),
-  category: z.string().optional(),
+  category: ProductCategorySchema.optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
   stockLevel: z.enum(['in_stock', 'out_of_stock', 'low_stock']).optional(),

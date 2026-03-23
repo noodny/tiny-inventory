@@ -89,7 +89,7 @@ describe('Product routes', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/products',
-      payload: { sku: 'X', name: 'X', category: 'X', price: -1 },
+      payload: { sku: 'X', name: 'X', category: 'Peripherals', price: -1 },
     });
     expect(res.statusCode).toBe(400);
   });

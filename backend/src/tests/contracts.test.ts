@@ -130,7 +130,7 @@ describe('Error contract shape', () => {
     productMock.create.mockRejectedValueOnce(p2002);
     const res = await app.inject({
       method: 'POST', url: '/api/products',
-      payload: { sku: 'X', name: 'X', category: 'X', price: 1 },
+      payload: { sku: 'X', name: 'X', category: 'Peripherals', price: 1 },
     });
     expect(res.statusCode).toBe(409);
     const body = res.json();
@@ -181,7 +181,7 @@ describe('Response field completeness', () => {
   it('Product response contains all expected fields', async () => {
     const res = await app.inject({
       method: 'POST', url: '/api/products',
-      payload: { sku: 'T', name: 'T', category: 'T', price: 1 },
+      payload: { sku: 'T', name: 'T', category: 'Peripherals', price: 1 },
     });
     const body = res.json();
     for (const field of ['id', 'sku', 'name', 'category', 'description', 'price', 'isActive', 'createdAt', 'updatedAt']) {
