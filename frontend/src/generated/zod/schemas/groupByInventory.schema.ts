@@ -1,0 +1,15 @@
+import type { Prisma } from '@prisma/client';
+import * as z from 'zod';
+import { InventoryWhereInputObjectSchema as InventoryWhereInputObjectSchema } from './objects/InventoryWhereInput.schema';
+import { InventoryOrderByWithAggregationInputObjectSchema as InventoryOrderByWithAggregationInputObjectSchema } from './objects/InventoryOrderByWithAggregationInput.schema';
+import { InventoryScalarWhereWithAggregatesInputObjectSchema as InventoryScalarWhereWithAggregatesInputObjectSchema } from './objects/InventoryScalarWhereWithAggregatesInput.schema';
+import { InventoryScalarFieldEnumSchema } from './enums/InventoryScalarFieldEnum.schema';
+import { InventoryCountAggregateInputObjectSchema as InventoryCountAggregateInputObjectSchema } from './objects/InventoryCountAggregateInput.schema';
+import { InventoryMinAggregateInputObjectSchema as InventoryMinAggregateInputObjectSchema } from './objects/InventoryMinAggregateInput.schema';
+import { InventoryMaxAggregateInputObjectSchema as InventoryMaxAggregateInputObjectSchema } from './objects/InventoryMaxAggregateInput.schema';
+import { InventoryAvgAggregateInputObjectSchema as InventoryAvgAggregateInputObjectSchema } from './objects/InventoryAvgAggregateInput.schema';
+import { InventorySumAggregateInputObjectSchema as InventorySumAggregateInputObjectSchema } from './objects/InventorySumAggregateInput.schema';
+
+export const InventoryGroupBySchema: z.ZodType<Prisma.InventoryGroupByArgs> = z.object({ where: InventoryWhereInputObjectSchema.optional(), orderBy: z.union([InventoryOrderByWithAggregationInputObjectSchema, InventoryOrderByWithAggregationInputObjectSchema.array()]).optional(), having: InventoryScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(InventoryScalarFieldEnumSchema), _count: z.union([ z.literal(true), InventoryCountAggregateInputObjectSchema ]).optional(), _min: InventoryMinAggregateInputObjectSchema.optional(), _max: InventoryMaxAggregateInputObjectSchema.optional(), _avg: InventoryAvgAggregateInputObjectSchema.optional(), _sum: InventorySumAggregateInputObjectSchema.optional() }).strict() as unknown as z.ZodType<Prisma.InventoryGroupByArgs>;
+
+export const InventoryGroupByZodSchema = z.object({ where: InventoryWhereInputObjectSchema.optional(), orderBy: z.union([InventoryOrderByWithAggregationInputObjectSchema, InventoryOrderByWithAggregationInputObjectSchema.array()]).optional(), having: InventoryScalarWhereWithAggregatesInputObjectSchema.optional(), take: z.number().optional(), skip: z.number().optional(), by: z.array(InventoryScalarFieldEnumSchema), _count: z.union([ z.literal(true), InventoryCountAggregateInputObjectSchema ]).optional(), _min: InventoryMinAggregateInputObjectSchema.optional(), _max: InventoryMaxAggregateInputObjectSchema.optional(), _avg: InventoryAvgAggregateInputObjectSchema.optional(), _sum: InventorySumAggregateInputObjectSchema.optional() }).strict();

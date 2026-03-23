@@ -9,6 +9,13 @@ generator jsonSchema {
   includeRequiredFields    = "true"
 }
 
+generator zod {
+  provider                  = "prisma-zod-generator"
+  output                    = "../../frontend/src/generated/zod"
+  isGenerateSelect          = false
+  isGenerateInclude         = false
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")

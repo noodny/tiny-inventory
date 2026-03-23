@@ -17,8 +17,7 @@
     "db:migrate": "npm run db:migrate -w backend",
     "db:seed": "npm run db:seed -w backend",
     "db:studio": "npm run db:studio -w backend",
-    "generate:contracts": "npm run db:generate -w backend && tsx scripts/generate-frontend-schemas.ts",
-    "check:drift": "tsx scripts/check-contract-drift.ts"
+    "generate:contracts": "npm run db:generate -w backend"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
