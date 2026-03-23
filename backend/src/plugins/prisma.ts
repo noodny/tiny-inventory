@@ -16,7 +16,7 @@ async function prismaPlugin(fastify: FastifyInstance, opts: PrismaPluginOptions)
   const prisma =
     opts.prismaClient ??
     new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
+      log: fastify.config.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
     });
 
   if (!opts.prismaClient) {
@@ -30,4 +30,4 @@ async function prismaPlugin(fastify: FastifyInstance, opts: PrismaPluginOptions)
   });
 }
 
-export default fp(prismaPlugin, { name: 'prisma' });
+export default fp(prismaPlugin, { name: 'prisma', dependencies: ['env'] });
