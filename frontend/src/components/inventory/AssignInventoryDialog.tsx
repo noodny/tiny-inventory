@@ -84,7 +84,9 @@ export default function AssignInventoryDialog({ open, onClose, onSubmit, stores,
             <Label>Store</Label>
             <Select value={storeId} onValueChange={(v) => setStoreId(v ?? '')}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a store" />
+                <SelectValue placeholder="Select a store">
+                  {storeId ? stores.find((s) => String(s.id) === storeId)?.name ?? storeId : 'Select a store'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {stores.filter((s) => s.isActive).map((s) => (
@@ -97,7 +99,11 @@ export default function AssignInventoryDialog({ open, onClose, onSubmit, stores,
             <Label>Product</Label>
             <Select value={productId} onValueChange={(v) => setProductId(v ?? '')}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a product" />
+                <SelectValue placeholder="Select a product">
+                  {productId
+                    ? (() => { const p = products.find((p) => String(p.id) === productId); return p ? `${p.name} (${p.sku})` : productId; })()
+                    : 'Select a product'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {products.filter((p) => p.isActive).map((p) => (

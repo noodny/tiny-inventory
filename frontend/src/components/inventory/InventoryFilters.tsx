@@ -36,6 +36,13 @@ export const emptyFilters: Filters = {
 
 export type { Filters as InventoryFilters };
 
+const STOCK_LEVEL_LABELS: Record<string, string> = {
+  all: 'All',
+  in_stock: 'In Stock',
+  low_stock: 'Low Stock',
+  out_of_stock: 'Out of Stock',
+};
+
 export default function InventoryFiltersBar({ filters, stores, onChange, onReset }: Props) {
   const update = (key: keyof Filters, value: string) => {
     onChange({ ...filters, [key]: value });
@@ -47,13 +54,20 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
     filters.maxPrice !== '' ||
     filters.stockLevel !== '';
 
+  const storeLabel = filters.storeId === 'all'
+    ? 'All stores'
+    : stores.find((s) => String(s.id) === filters.storeId)?.name ?? filters.storeId;
+
+  const stockLabel = STOCK_LEVEL_LABELS[filters.stockLevel || 'all'] ?? 'All';
+  const categoryLabel = filters.category || 'All';
+
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
         <Label className="text-xs">Store</Label>
         <Select value={filters.storeId} onValueChange={(v) => update('storeId', v ?? 'all')}>
           <SelectTrigger className="h-9 w-48">
-            <SelectValue />
+            <SelectValue placeholder={storeLabel}>{storeLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All stores</SelectItem>
@@ -67,7 +81,7 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
         <Label className="text-xs">Category</Label>
         <Select value={filters.category || 'all'} onValueChange={(v) => update('category', v === 'all' ? '' : (v ?? ''))}>
           <SelectTrigger className="h-9 w-40">
-            <SelectValue placeholder="All" />
+            <SelectValue placeholder={categoryLabel}>{categoryLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
@@ -107,7 +121,7 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
         <Label className="text-xs">Stock Level</Label>
         <Select value={filters.stockLevel || 'all'} onValueChange={(v) => update('stockLevel', v === 'all' ? '' : (v ?? ''))}>
           <SelectTrigger className="h-9 w-36">
-            <SelectValue placeholder="All" />
+            <SelectValue placeholder={stockLabel}>{stockLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
