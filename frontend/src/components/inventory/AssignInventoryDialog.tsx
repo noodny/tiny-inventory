@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Store, Product } from 'tiny-inventory-shared';
 import { ApiError } from '@/api/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,11 @@ export default function AssignInventoryDialog({ open, onClose, onSubmit, stores,
   const [quantity, setQuantity] = useState('0');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const productOptions = useMemo(
+    () => products.filter((p) => p.isActive).map((p) => ({ value: String(p.id), label: `${p.name} (${p.sku})` })),
+    [products],
+  );
 
   useEffect(() => {
     if (open) {
@@ -83,7 +89,7 @@ export default function AssignInventoryDialog({ open, onClose, onSubmit, stores,
           <div className="space-y-2">
             <Label>Store</Label>
             <Select value={storeId} onValueChange={(v) => setStoreId(v ?? '')}>
-              <SelectTrigger>
+              <SelectTrigger data-test="store-select">
                 <SelectValue placeholder="Select a store">
                   {storeId ? stores.find((s) => String(s.id) === storeId)?.name ?? storeId : 'Select a store'}
                 </SelectValue>
@@ -97,20 +103,13 @@ export default function AssignInventoryDialog({ open, onClose, onSubmit, stores,
           </div>
           <div className="space-y-2">
             <Label>Product</Label>
-            <Select value={productId} onValueChange={(v) => setProductId(v ?? '')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a product">
-                  {productId
-                    ? (() => { const p = products.find((p) => String(p.id) === productId); return p ? `${p.name} (${p.sku})` : productId; })()
-                    : 'Select a product'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {products.filter((p) => p.isActive).map((p) => (
-                  <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.sku})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={productOptions}
+              value={productId}
+              onValueChange={(v) => setProductId(v)}
+              placeholder="Search products..."
+              data-test="product-select"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="assign-qty">Quantity</Label>
