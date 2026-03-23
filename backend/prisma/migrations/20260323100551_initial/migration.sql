@@ -43,3 +43,6 @@ ALTER TABLE `inventory` ADD CONSTRAINT `inventory_storeId_fkey` FOREIGN KEY (`st
 
 -- AddForeignKey
 ALTER TABLE `inventory` ADD CONSTRAINT `inventory_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Non-negative quantity constraint (MySQL 8.0+)
+ALTER TABLE `inventory` ADD CONSTRAINT `inventory_quantity_nonneg` CHECK (`quantity` >= 0);

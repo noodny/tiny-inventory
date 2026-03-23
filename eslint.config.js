@@ -7,7 +7,7 @@ import prettierConfig from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.prisma/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.prisma/**', 'backend/src/generated/**', 'frontend/src/generated/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

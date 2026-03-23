@@ -16,7 +16,9 @@
     "format": "prettier --write .",
     "db:migrate": "npm run db:migrate -w backend",
     "db:seed": "npm run db:seed -w backend",
-    "db:studio": "npm run db:studio -w backend"
+    "db:studio": "npm run db:studio -w backend",
+    "generate:contracts": "npm run db:generate -w backend && tsx scripts/generate-frontend-schemas.ts",
+    "check:drift": "tsx scripts/check-contract-drift.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
@@ -26,6 +28,7 @@
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "prettier": "^3.5.3",
+    "tsx": "^4.21.0",
     "typescript-eslint": "^8.26.0"
   }
 }
