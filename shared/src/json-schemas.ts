@@ -9,6 +9,7 @@ import {
   UpdateProductSchema,
   ProductListQuerySchema,
   InventorySchema,
+  InventoryWithRelationsSchema,
   CreateInventorySchema,
   UpdateInventorySchema,
   InventoryListQuerySchema,
@@ -40,6 +41,7 @@ export const productListQuery = toJS(ProductListQuerySchema);
 
 // Inventory
 export const inventoryResponse = toJS(InventorySchema);
+export const inventoryWithRelationsResponse = toJS(InventoryWithRelationsSchema);
 export const inventoryCreateBody = toJS(CreateInventorySchema);
 export const inventoryUpdateBody = toJS(UpdateInventorySchema);
 export const inventoryListQuery = toJS(InventoryListQuerySchema);

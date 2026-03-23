@@ -88,6 +88,11 @@ export const InventorySchema = z.object({
   updatedAt: z.string().datetime({ offset: true }),
 });
 
+export const InventoryWithRelationsSchema = InventorySchema.extend({
+  store: StoreSchema,
+  product: ProductSchema,
+});
+
 export const CreateInventorySchema = z.object({
   storeId: z.number().int(),
   productId: z.number().int(),
@@ -166,6 +171,7 @@ export type StoreListQuery = z.infer<typeof StoreListQuerySchema>;
 export type InventoryListQuery = z.infer<typeof InventoryListQuerySchema>;
 
 export type Inventory = z.infer<typeof InventorySchema>;
+export type InventoryWithRelations = z.infer<typeof InventoryWithRelationsSchema>;
 export type CreateInventory = z.infer<typeof CreateInventorySchema>;
 export type UpdateInventory = z.infer<typeof UpdateInventorySchema>;
 
