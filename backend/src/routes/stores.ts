@@ -14,7 +14,7 @@ export default async function storeRoutes(fastify: FastifyInstance) {
   fastify.post<{ Body: CreateStore }>('/stores', {
     schema: {
       body: storeCreateBody,
-      response: { 201: storeResponse, 400: errorSchema },
+      response: { 201: storeResponse, 400: errorSchema, 409: errorSchema },
     },
     handler: async (request, reply) => {
       try {
@@ -82,11 +82,6 @@ export default async function storeRoutes(fastify: FastifyInstance) {
         throw badRequest('At least one field must be provided');
       }
 
-      const store = await fastify.prisma.store.findUnique({
-        where: { id: request.params.id },
-      });
-      if (!store) throw notFound('Store');
-
       try {
         const updated = await fastify.prisma.store.update({
           where: { id: request.params.id },
@@ -94,7 +89,7 @@ export default async function storeRoutes(fastify: FastifyInstance) {
         });
         return reply.send(updated);
       } catch (err) {
-        throw handlePrismaError(err);
+        throw handlePrismaError(err, 'Store');
       }
     },
   });

@@ -5,6 +5,7 @@ import path from 'path';
 import prismaPlugin from './plugins/prisma';
 import errorPlugin from './plugins/errors';
 import storeRoutes from './routes/stores';
+import productRoutes from './routes/products';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -30,6 +31,7 @@ export function buildApp(opts: BuildAppOptions = {}) {
   app.register(errorPlugin);
 
   app.register(storeRoutes, { prefix: '/api' });
+  app.register(productRoutes, { prefix: '/api' });
 
   app.get('/health', async () => ({ status: 'ok' }));
 

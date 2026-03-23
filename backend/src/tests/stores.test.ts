@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Prisma } from '@prisma/client';
 import { buildApp } from '../app';
+
+const p2025 = new Prisma.PrismaClientKnownRequestError('Record not found', {
+  code: 'P2025',
+  clientVersion: '6.0.0',
+});
 
 const mockStoreData = {
   id: 1,
@@ -118,6 +124,7 @@ describe('Store routes', () => {
   });
 
   it('PATCH /api/stores/999 returns 404', async () => {
+    storeMock.update.mockRejectedValueOnce(p2025);
     const res = await app.inject({
       method: 'PATCH',
       url: '/api/stores/999',
