@@ -36,7 +36,7 @@ The inventory page lets users upload a CSV (`store_name,sku,quantity`) to bulk-c
 
 **Frontend** - PapaParse parses the file client-side; each row is validated against a shared Zod schema. A preview table shows valid/error badges before the user confirms.
 
-**Backend** (`POST /api/inventory/batch`) - Resolves store names and SKUs via two batch queries, then validates every row (unknown store/product, inactive records, duplicate pairs). If any row fails validation the entire import is rejected. On success, all rows are upserted inside a single Prisma transaction and the response reports created/updated counts per row.
+**Backend** (`POST /api/inventory/batch`) - Checks for duplicate store+SKU pairs upfront, then splits the items into batches of 100. Each batch runs in its own transaction: resolves store names and SKUs, validates every row (unknown store/product, inactive records), queries existing inventory to determine create vs update, then bulk-upserts via a single `INSERT ... ON DUPLICATE KEY UPDATE`. If any row fails validation the entire import is rejected. The chunked approach limits lock duration and avoids holding a single long transaction for large imports.
 
 For testing use sample CSV files from the `/samples` directory.
 
@@ -59,6 +59,8 @@ For testing use sample CSV files from the `/samples` directory.
 
 ## If I Had More Time
 
+- **Frontend router** - Tanstack Router or React Router
+- **Fetching library** - Most likely Tanstack Query
 - **Frontend component tests** - Cover Redux slices, form validation edge cases, and error states.
 - **Integration tests with a real database** - Use Testcontainers (or a Docker-based MySQL) to catch migration and query issues that mocked tests miss.
 - **Authentication & RBAC** - There is currently no auth; adding JWT or session-based login with role-based access would be the natural next step for a production deployment.
