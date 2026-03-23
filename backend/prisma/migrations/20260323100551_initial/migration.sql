@@ -1,12 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `items` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropTable
-DROP TABLE `items`;
-
 -- CreateTable
 CREATE TABLE `stores` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
@@ -52,6 +43,3 @@ ALTER TABLE `inventory` ADD CONSTRAINT `inventory_storeId_fkey` FOREIGN KEY (`st
 
 -- AddForeignKey
 ALTER TABLE `inventory` ADD CONSTRAINT `inventory_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- Non-negative quantity constraint (MySQL 8.0+)
-ALTER TABLE `inventory` ADD CONSTRAINT `inventory_quantity_nonneg` CHECK (`quantity` >= 0);

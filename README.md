@@ -25,12 +25,12 @@ tiny-inventory/
 │   │   ├── app.ts              # Fastify app factory
 │   │   ├── index.ts            # Entry point
 │   │   ├── plugins/prisma.ts   # Prisma plugin
-│   │   ├── routes/items.ts     # Items CRUD routes
+│   │   ├── routes/             # API route modules
 │   │   └── tests/              # Vitest unit tests
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── api/items.ts        # API client (fetch + Zod validation)
+│   │   ├── api/                # API clients
 │   │   ├── components/         # React components
 │   │   ├── store/              # Redux Toolkit slices + hooks
 │   │   └── tests/              # Vitest unit tests
@@ -110,18 +110,15 @@ This starts MySQL, the backend (tsx watch), and the frontend (Vite dev server) w
 
 ---
 
-## API
+## Domain Model
 
-Base URL: `http://localhost:3000/api`
+The system manages **Stores**, **Products**, and **Inventory** (product-in-store stock):
 
-| Method | Path         | Description       |
-| ------ | ------------ | ----------------- |
-| GET    | `/items`     | List all items    |
-| GET    | `/items/:id` | Get a single item |
-| POST   | `/items`     | Create an item    |
-| PATCH  | `/items/:id` | Update an item    |
-| DELETE | `/items/:id` | Delete an item    |
-| GET    | `/health`    | Health check      |
+- **Store** — physical location where products are stocked
+- **Product** — global catalog record with unique SKU
+- **Inventory** — links a Store and Product with a stock quantity
+
+API endpoints for Store, Product, and Inventory CRUD are being implemented.
 
 ---
 
