@@ -5,6 +5,7 @@ import type {
   CreateInventory,
   UpdateInventory,
 } from 'tiny-inventory-shared';
+import { ApiError } from '@/api/client';
 import * as api from '@/api/inventory';
 
 interface InventoryState {
@@ -35,20 +36,35 @@ export const fetchStoreInventory = createAsyncThunk(
   },
 );
 
-export const addInventory = createAsyncThunk('inventory/add', async (input: CreateInventory) => {
-  return api.createInventory(input);
+export const addInventory = createAsyncThunk('inventory/add', async (input: CreateInventory, { rejectWithValue }) => {
+  try {
+    return await api.createInventory(input);
+  } catch (err) {
+    if (err instanceof ApiError) return rejectWithValue(err);
+    throw err;
+  }
 });
 
 export const editInventory = createAsyncThunk(
   'inventory/edit',
-  async ({ id, input }: { id: number; input: UpdateInventory }) => {
-    return api.updateInventory(id, input);
+  async ({ id, input }: { id: number; input: UpdateInventory }, { rejectWithValue }) => {
+    try {
+      return await api.updateInventory(id, input);
+    } catch (err) {
+      if (err instanceof ApiError) return rejectWithValue(err);
+      throw err;
+    }
   },
 );
 
-export const removeInventory = createAsyncThunk('inventory/remove', async (id: number) => {
-  await api.deleteInventory(id);
-  return id;
+export const removeInventory = createAsyncThunk('inventory/remove', async (id: number, { rejectWithValue }) => {
+  try {
+    await api.deleteInventory(id);
+    return id;
+  } catch (err) {
+    if (err instanceof ApiError) return rejectWithValue(err);
+    throw err;
+  }
 });
 
 const inventorySlice = createSlice({

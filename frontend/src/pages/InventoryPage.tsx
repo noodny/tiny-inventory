@@ -66,14 +66,8 @@ export default function InventoryPage() {
   }, [load]);
 
   const handleAssign = async (data: { storeId: number; productId: number; quantity: number }) => {
-    setActionError('');
-    try {
-      await dispatch(addInventory(data)).unwrap();
-      load();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.body.message : 'Failed to assign product');
-      throw err;
-    }
+    await dispatch(addInventory(data)).unwrap();
+    load();
   };
 
   const handleQuantityUpdate = async (id: number, quantity: number) => {
@@ -133,7 +127,12 @@ export default function InventoryPage() {
         <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>
       )}
       {actionError && (
-        <Alert variant="destructive"><AlertDescription>{actionError}</AlertDescription></Alert>
+        <Alert variant="destructive">
+          <AlertDescription className="flex items-center justify-between">
+            {actionError}
+            <Button variant="ghost" size="sm" className="h-auto p-1" onClick={() => setActionError('')}>✕</Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {status === 'loading' && (

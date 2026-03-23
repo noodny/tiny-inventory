@@ -62,6 +62,34 @@ test.describe('Products CRUD', () => {
   });
 });
 
+test.describe('Products errors', () => {
+  test('shows error in edit dialog when changing SKU to an existing one', async ({ page }) => {
+    await page.goto('/#products');
+    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
+
+    // Wait for the product table to load and click Edit on the first product
+    const firstRow = page.getByRole('table').locator('tbody tr').first();
+    await expect(firstRow).toBeVisible({ timeout: 5000 });
+    await firstRow.getByRole('button', { name: /edit/i }).click();
+
+    // Dialog should open
+    await expect(page.getByRole('heading', { name: /edit product/i })).toBeVisible();
+
+    // Change the SKU to one that belongs to another product
+    const skuInput = page.getByLabel('SKU');
+    await skuInput.clear();
+    await skuInput.fill('KB-MECH-002');
+
+    await page.getByRole('button', { name: /^update$/i }).click();
+
+    // Error should appear inside the dialog
+    await expect(page.getByText(/already exists/i)).toBeVisible({ timeout: 5000 });
+
+    // Dialog should still be open (not dismissed)
+    await expect(page.getByRole('heading', { name: /edit product/i })).toBeVisible();
+  });
+});
+
 test.describe('Inventory', () => {
   test('shows inventory page with filter controls', async ({ page }) => {
     await page.goto('/#inventory');

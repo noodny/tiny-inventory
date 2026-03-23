@@ -39,27 +39,15 @@ export default function ProductsPage() {
   }, [load, page]);
 
   const handleCreate = async (data: CreateProduct) => {
-    setActionError('');
-    try {
-      await dispatch(addProduct(data)).unwrap();
-      load(1);
-      setPage(1);
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.body.message : 'Failed to create product');
-      throw err;
-    }
+    await dispatch(addProduct(data)).unwrap();
+    load(1);
+    setPage(1);
   };
 
   const handleEdit = async (data: CreateProduct) => {
     if (!editingProduct) return;
-    setActionError('');
-    try {
-      await dispatch(editProduct({ id: editingProduct.id, input: data })).unwrap();
-      load();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.body.message : 'Failed to update product');
-      throw err;
-    }
+    await dispatch(editProduct({ id: editingProduct.id, input: data })).unwrap();
+    load();
   };
 
   const handleDeactivate = async (product: Product) => {
@@ -106,7 +94,10 @@ export default function ProductsPage() {
       )}
       {actionError && (
         <Alert variant="destructive">
-          <AlertDescription>{actionError}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            {actionError}
+            <Button variant="ghost" size="sm" className="h-auto p-1" onClick={() => setActionError('')}>✕</Button>
+          </AlertDescription>
         </Alert>
       )}
 

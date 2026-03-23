@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Store, PaginationMeta, CreateStore, UpdateStore } from 'tiny-inventory-shared';
+import { ApiError } from '@/api/client';
 import * as api from '@/api/stores';
 
 interface StoresState {
@@ -23,20 +24,35 @@ export const fetchStores = createAsyncThunk(
   },
 );
 
-export const addStore = createAsyncThunk('stores/add', async (input: CreateStore) => {
-  return api.createStore(input);
+export const addStore = createAsyncThunk('stores/add', async (input: CreateStore, { rejectWithValue }) => {
+  try {
+    return await api.createStore(input);
+  } catch (err) {
+    if (err instanceof ApiError) return rejectWithValue(err);
+    throw err;
+  }
 });
 
 export const editStore = createAsyncThunk(
   'stores/edit',
-  async ({ id, input }: { id: number; input: UpdateStore }) => {
-    return api.updateStore(id, input);
+  async ({ id, input }: { id: number; input: UpdateStore }, { rejectWithValue }) => {
+    try {
+      return await api.updateStore(id, input);
+    } catch (err) {
+      if (err instanceof ApiError) return rejectWithValue(err);
+      throw err;
+    }
   },
 );
 
-export const removeStore = createAsyncThunk('stores/remove', async (id: number) => {
-  await api.deleteStore(id);
-  return id;
+export const removeStore = createAsyncThunk('stores/remove', async (id: number, { rejectWithValue }) => {
+  try {
+    await api.deleteStore(id);
+    return id;
+  } catch (err) {
+    if (err instanceof ApiError) return rejectWithValue(err);
+    throw err;
+  }
 });
 
 const storesSlice = createSlice({

@@ -39,27 +39,15 @@ export default function StoresPage() {
   }, [load, page]);
 
   const handleCreate = async (data: { name: string }) => {
-    setActionError('');
-    try {
-      await dispatch(addStore(data)).unwrap();
-      load(1);
-      setPage(1);
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.body.message : 'Failed to create store');
-      throw err;
-    }
+    await dispatch(addStore(data)).unwrap();
+    load(1);
+    setPage(1);
   };
 
   const handleEdit = async (data: { name: string }) => {
     if (!editingStore) return;
-    setActionError('');
-    try {
-      await dispatch(editStore({ id: editingStore.id, input: data })).unwrap();
-      load();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.body.message : 'Failed to update store');
-      throw err;
-    }
+    await dispatch(editStore({ id: editingStore.id, input: data })).unwrap();
+    load();
   };
 
   const handleDeactivate = async (store: Store) => {
@@ -106,7 +94,10 @@ export default function StoresPage() {
       )}
       {actionError && (
         <Alert variant="destructive">
-          <AlertDescription>{actionError}</AlertDescription>
+          <AlertDescription className="flex items-center justify-between">
+            {actionError}
+            <Button variant="ghost" size="sm" className="h-auto p-1" onClick={() => setActionError('')}>✕</Button>
+          </AlertDescription>
         </Alert>
       )}
 
