@@ -1,16 +1,8 @@
+import type { PaginatedResult } from 'tiny-inventory-shared';
+
 export interface PaginationParams {
   page: number;
   pageSize: number;
-}
-
-export interface PaginatedResult<T> {
-  data: T[];
-  meta: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
 }
 
 export function parsePagination(query: { page?: number; pageSize?: number }): PaginationParams {
@@ -20,7 +12,11 @@ export function parsePagination(query: { page?: number; pageSize?: number }): Pa
   };
 }
 
-export function paginate<T>(data: T[], total: number, params: PaginationParams): PaginatedResult<T> {
+export function paginate<T>(
+  data: T[],
+  total: number,
+  params: PaginationParams,
+): PaginatedResult<T> {
   return {
     data,
     meta: {
