@@ -1,4 +1,5 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { label: 'Stores', href: '#stores' },
@@ -7,6 +8,14 @@ const navItems = [
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
+  const [hash, setHash] = useState(window.location.hash || '#stores');
+
+  useEffect(() => {
+    const handler = () => setHash(window.location.hash || '#stores');
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -17,7 +26,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <a
                 key={item.href}
                 href={item.href}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className={cn(
+                  'text-sm transition-colors',
+                  hash === item.href
+                    ? 'text-foreground font-medium'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
               >
                 {item.label}
               </a>
