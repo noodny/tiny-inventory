@@ -64,3 +64,4 @@ For testing use sample CSV files from the `/samples` directory.
 - **Frontend component tests** - Cover Redux slices, form validation edge cases, and error states.
 - **Integration tests with a real database** - Use Testcontainers (or a Docker-based MySQL) to catch migration and query issues that mocked tests miss.
 - **Authentication & RBAC** - There is currently no auth; adding JWT or session-based login with role-based access would be the natural next step for a production deployment.
+- **Security review** - Even though the app would be used by employees only it would still make sense to run a security review and safeguard against potential XSS / SQL injection attacks.

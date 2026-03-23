@@ -196,7 +196,7 @@ export default function ImportCsvDialog({ open, onClose, onImportComplete }: Pro
             {importResult.success ? (
               <Alert>
                 <AlertDescription>
-                  Import complete: <strong>{importResult.created} created</strong>, <strong>{importResult.updated} updated</strong>.
+                  Import complete: <strong>{importResult.created} created</strong>, <strong>{importResult.updated} updated</strong>{importResult.errors.length > 0 && <>, <strong className="text-destructive">{importResult.errors.length} error(s)</strong></>}.
                 </AlertDescription>
               </Alert>
             ) : (

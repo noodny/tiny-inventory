@@ -208,14 +208,10 @@ export default async function inventoryRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (allErrors.length > 0) {
-        return reply.send({ success: false, created: 0, updated: 0, errors: allErrors, results: [] });
-      }
-
       const created = allResults.filter((r) => r.status === 'created').length;
       const updated = allResults.filter((r) => r.status === 'updated').length;
 
-      return reply.send({ success: true, created, updated, errors: [], results: allResults });
+      return reply.send({ success: true, created, updated, errors: allErrors, results: allResults });
     },
   });
 
