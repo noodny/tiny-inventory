@@ -5,21 +5,21 @@ import { store } from '../store';
 import App from '../App';
 
 // Mock the API modules so no real HTTP calls are made
-vi.mock('../api/stores', () => ({
+vi.mock('@/api/stores', () => ({
   fetchStores: vi.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
   createStore: vi.fn(),
   updateStore: vi.fn(),
   deleteStore: vi.fn(),
 }));
 
-vi.mock('../api/products', () => ({
+vi.mock('@/api/products', () => ({
   fetchProducts: vi.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
   createProduct: vi.fn(),
   updateProduct: vi.fn(),
   deleteProduct: vi.fn(),
 }));
 
-vi.mock('../api/inventory', () => ({
+vi.mock('@/api/inventory', () => ({
   fetchInventory: vi.fn().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
   fetchStoreInventory: vi.fn(),
   createInventory: vi.fn(),
