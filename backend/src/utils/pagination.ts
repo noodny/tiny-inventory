@@ -8,7 +8,7 @@ export interface PaginationParams {
 export function parsePagination(query: { page?: number; pageSize?: number }): PaginationParams {
   return {
     page: query.page ?? 1,
-    pageSize: query.pageSize ?? 20,
+    pageSize: query.pageSize ?? 5,
   };
 }
 
