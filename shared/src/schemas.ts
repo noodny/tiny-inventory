@@ -26,10 +26,8 @@ export const UpdateStoreSchema = z
 export const StoreListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  sort: z.string().optional(),
-  isActive: z
-    .union([z.boolean(), z.string().transform((v) => v === 'true')])
-    .optional(),
+
+  isActive: z.boolean().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -70,13 +68,11 @@ export const UpdateProductSchema = z
 export const ProductListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  sort: z.string().optional(),
+
   category: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
-  isActive: z
-    .union([z.boolean(), z.string().transform((v) => v === 'true')])
-    .optional(),
+  isActive: z.boolean().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +101,7 @@ export const UpdateInventorySchema = z.object({
 export const InventoryListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  sort: z.string().optional(),
+
   storeId: z.coerce.number().int().optional(),
   category: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),

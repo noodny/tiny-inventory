@@ -19,8 +19,12 @@ import {
 } from './schemas';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const toJS = (schema: z.ZodType<any>) =>
-  toJSONSchema(schema as never) as Record<string, unknown>;
+function toJS(schema: z.ZodType<any>): Record<string, unknown> {
+  const raw = toJSONSchema(schema as never) as Record<string, unknown>;
+  // Strip $schema — Fastify's AJV doesn't recognise it as a valid ref
+  delete raw.$schema;
+  return raw;
+}
 
 // Store
 export const storeResponse = toJS(StoreSchema);

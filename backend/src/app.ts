@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import prismaPlugin from './plugins/prisma';
 import errorPlugin from './plugins/errors';
+import storeRoutes from './routes/stores';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -27,6 +28,8 @@ export function buildApp(opts: BuildAppOptions = {}) {
 
   app.register(prismaPlugin, { prismaClient: opts.prismaClient });
   app.register(errorPlugin);
+
+  app.register(storeRoutes, { prefix: '/api' });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
