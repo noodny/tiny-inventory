@@ -17,6 +17,7 @@ interface BuildAppOptions {
 
 export function buildApp(opts: BuildAppOptions = {}) {
   const app = Fastify({
+    logger: true,
     ajv: {
       customOptions: { coerceTypes: true },
     },
