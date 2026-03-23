@@ -122,7 +122,7 @@ export default function ProductFormDialog({ open, onClose, onSubmit, product }: 
                 value={form.category}
                 onValueChange={(v) => setForm((prev) => ({ ...prev, category: v ?? '' }))}
               >
-                <SelectTrigger>
+                <SelectTrigger data-test="category-select">
                   <SelectValue placeholder="Select category">{form.category || 'Select category'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>

@@ -116,6 +116,7 @@ export default function ImportCsvDialog({ open, onClose, onImportComplete }: Pro
               ref={fileRef}
               type="file"
               accept=".csv"
+              data-test="csv-file-input"
               onChange={handleFileChange}
             />
             {error && (

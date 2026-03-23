@@ -66,7 +66,7 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
       <div className="space-y-1">
         <Label className="text-xs">Store</Label>
         <Select value={filters.storeId} onValueChange={(v) => update('storeId', v ?? 'all')}>
-          <SelectTrigger className="h-9 w-48">
+          <SelectTrigger className="h-9 w-48" data-test="filter-store">
             <SelectValue placeholder={storeLabel}>{storeLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -80,7 +80,7 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
       <div className="space-y-1">
         <Label className="text-xs">Category</Label>
         <Select value={filters.category || 'all'} onValueChange={(v) => update('category', v === 'all' ? '' : (v ?? ''))}>
-          <SelectTrigger className="h-9 w-40">
+          <SelectTrigger className="h-9 w-40" data-test="filter-category">
             <SelectValue placeholder={categoryLabel}>{categoryLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -120,7 +120,7 @@ export default function InventoryFiltersBar({ filters, stores, onChange, onReset
       <div className="space-y-1">
         <Label className="text-xs">Stock Level</Label>
         <Select value={filters.stockLevel || 'all'} onValueChange={(v) => update('stockLevel', v === 'all' ? '' : (v ?? ''))}>
-          <SelectTrigger className="h-9 w-36">
+          <SelectTrigger className="h-9 w-36" data-test="filter-stock-level">
             <SelectValue placeholder={stockLabel}>{stockLabel}</SelectValue>
           </SelectTrigger>
           <SelectContent>

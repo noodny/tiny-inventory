@@ -38,14 +38,18 @@ The inventory page lets users upload a CSV (`store_name,sku,quantity`) to bulk-c
 
 **Backend** (`POST /api/inventory/batch`) - Resolves store names and SKUs via two batch queries, then validates every row (unknown store/product, inactive records, duplicate pairs). If any row fails validation the entire import is rejected. On success, all rows are upserted inside a single Prisma transaction and the response reports created/updated counts per row.
 
+For testing use sample CSV files from the `/samples` directory.
+
 ## Decisions & Trade-offs
 
+- **MySQL** - My DB of choice, I have the most experience with it so it's the first one I went for.
+- **Prisma** - Haven't had a chance to use it before. Intuitive schema first approach, built in types and migrations mechanism.
+- **Fastify over Express** - Built-in JSON Schema validation, serialization, and better throughput.
 - **Shared contract package** (`shared/`) - Zod schemas are the single source of truth; they generate TypeScript types for the frontend and JSON Schemas for Fastify validation.
 - **Hash-based routing** - Three pages, no external router. Keeps the bundle small and avoids server-side route config.
 - **Redux Toolkit** - Predictable state with good devtools; async thunks keep data-fetching in slices.
-- **Fastify over Express** - Built-in JSON Schema validation, serialization, and better throughput.
+- **shadcn/ui + Base UI** - shadcn provides copy-paste component scaffolding styled with Tailwind; Base UI supplies the underlying headless primitives (Select, Dialog, Popover) with built-in accessibility.
 - **Mocked Prisma in unit tests** - Fast and deterministic, but no real DB coverage; integration tests would complement this.
-- **All-or-nothing batch import** - If any row fails validation the whole import is rejected. Simpler to reason about than partial success, and the preview step gives users a chance to fix errors first.
 
 ## Testing Approach
 
@@ -55,6 +59,6 @@ The inventory page lets users upload a CSV (`store_name,sku,quantity`) to bulk-c
 
 ## If I Had More Time
 
-- **Frontend component tests** - Cover Redux slices, form validation edge cases, and error states with Testing Library.
+- **Frontend component tests** - Cover Redux slices, form validation edge cases, and error states.
 - **Integration tests with a real database** - Use Testcontainers (or a Docker-based MySQL) to catch migration and query issues that mocked tests miss.
 - **Authentication & RBAC** - There is currently no auth; adding JWT or session-based login with role-based access would be the natural next step for a production deployment.
