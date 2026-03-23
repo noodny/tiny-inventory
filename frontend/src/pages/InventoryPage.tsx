@@ -11,13 +11,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Table,
   TableHeader,
   TableBody,
@@ -36,12 +29,10 @@ export default function InventoryPage() {
   const { items, meta, status, error } = useAppSelector((s) => s.inventory);
 
   const [page, setPage] = useState(1);
-  const [storeId, setStoreId] = useState<string>('all');
   const [filters, setFilters] = useState<InventoryFilters>(emptyFilters);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionError, setActionError] = useState('');
 
-  // For the assign dialog dropdowns
   const [stores, setStores] = useState<Store[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
 
@@ -55,18 +46,18 @@ export default function InventoryPage() {
     if (filters.category) q.category = filters.category;
     if (filters.minPrice) q.minPrice = Number(filters.minPrice);
     if (filters.maxPrice) q.maxPrice = Number(filters.maxPrice);
-    if (filters.stockLevel && filters.stockLevel !== 'all') q.stockLevel = filters.stockLevel;
+    if (filters.stockLevel) q.stockLevel = filters.stockLevel;
     return q;
   }, [page, filters]);
 
   const load = useCallback(() => {
     const q = buildQuery();
-    if (storeId !== 'all') {
-      dispatch(fetchStoreInventory({ storeId: Number(storeId), query: q }));
+    if (filters.storeId !== 'all') {
+      dispatch(fetchStoreInventory({ storeId: Number(filters.storeId), query: q }));
     } else {
       dispatch(fetchInventory(q));
     }
-  }, [dispatch, storeId, buildQuery]);
+  }, [dispatch, filters.storeId, buildQuery]);
 
   useEffect(() => {
     load();
@@ -115,23 +106,12 @@ export default function InventoryPage() {
         <Button onClick={() => setDialogOpen(true)}>Assign Product</Button>
       </div>
 
-      <div className="flex items-end gap-4">
-        <div className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">Store</span>
-          <Select value={storeId} onValueChange={(v) => { setStoreId(v ?? 'all'); setPage(1); }}>
-            <SelectTrigger className="h-9 w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All stores</SelectItem>
-              {stores.map((s) => (
-                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <InventoryFiltersBar filters={filters} onChange={handleFilterChange} onReset={handleReset} />
-      </div>
+      <InventoryFiltersBar
+        filters={filters}
+        stores={stores}
+        onChange={handleFilterChange}
+        onReset={handleReset}
+      />
 
       {error && (
         <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>

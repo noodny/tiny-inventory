@@ -1,4 +1,5 @@
 import { PRODUCT_CATEGORIES } from 'tiny-inventory-shared';
+import type { Store } from 'tiny-inventory-shared';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -11,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 interface Filters {
+  storeId: string;
   category: string;
   minPrice: string;
   maxPrice: string;
@@ -19,11 +21,13 @@ interface Filters {
 
 interface Props {
   filters: Filters;
+  stores: Store[];
   onChange: (filters: Filters) => void;
   onReset: () => void;
 }
 
 export const emptyFilters: Filters = {
+  storeId: 'all',
   category: '',
   minPrice: '',
   maxPrice: '',
@@ -32,15 +36,33 @@ export const emptyFilters: Filters = {
 
 export type { Filters as InventoryFilters };
 
-export default function InventoryFiltersBar({ filters, onChange, onReset }: Props) {
+export default function InventoryFiltersBar({ filters, stores, onChange, onReset }: Props) {
   const update = (key: keyof Filters, value: string) => {
     onChange({ ...filters, [key]: value });
   };
 
-  const hasFilters = Object.values(filters).some((v) => v !== '');
+  const hasFilters = filters.storeId !== 'all' ||
+    filters.category !== '' ||
+    filters.minPrice !== '' ||
+    filters.maxPrice !== '' ||
+    filters.stockLevel !== '';
 
   return (
     <div className="flex flex-wrap items-end gap-3">
+      <div className="space-y-1">
+        <Label className="text-xs">Store</Label>
+        <Select value={filters.storeId} onValueChange={(v) => update('storeId', v ?? 'all')}>
+          <SelectTrigger className="h-9 w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All stores</SelectItem>
+            {stores.map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="space-y-1">
         <Label className="text-xs">Category</Label>
         <Select value={filters.category || 'all'} onValueChange={(v) => update('category', v === 'all' ? '' : (v ?? ''))}>
@@ -83,7 +105,7 @@ export default function InventoryFiltersBar({ filters, onChange, onReset }: Prop
       </div>
       <div className="space-y-1">
         <Label className="text-xs">Stock Level</Label>
-        <Select value={filters.stockLevel} onValueChange={(v) => update('stockLevel', v ?? '')}>
+        <Select value={filters.stockLevel || 'all'} onValueChange={(v) => update('stockLevel', v === 'all' ? '' : (v ?? ''))}>
           <SelectTrigger className="h-9 w-36">
             <SelectValue placeholder="All" />
           </SelectTrigger>
