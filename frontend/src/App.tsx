@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AppShell from './components/layout/AppShell';
 import StoresPage from './pages/StoresPage';
 import ProductsPage from './pages/ProductsPage';
+import InventoryPage from './pages/InventoryPage';
 
 function getHash() {
   return window.location.hash.replace('#', '') || 'stores';
@@ -20,9 +21,7 @@ export default function App() {
     <AppShell>
       {page === 'stores' && <StoresPage />}
       {page === 'products' && <ProductsPage />}
-      {page === 'inventory' && (
-        <p className="text-muted-foreground">Inventory management coming in PRD-10.</p>
-      )}
+      {page === 'inventory' && <InventoryPage />}
       {!['stores', 'products', 'inventory'].includes(page) && <StoresPage />}
     </AppShell>
   );
